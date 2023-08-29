@@ -72,25 +72,60 @@ public class Board : MonoBehaviour
     private bool IsWithInBounds(int x, int y)
     {
         return (x >= 0 && x < width && y >= 0 && y < height);
-        
     }
 
-    void FillRandom()
+    private void FillRandom()
     {
+        int maxIterations = 100;
+        int interactions = 0;
         for (int i = 0; i < width; i++)
         {
             for (int j = 0; j < height; j++)
             {
-                GameObject randomPiece = Instantiate(GetRandomGamePiece(), Vector3.zero, Quaternion.identity);
-                if(randomPiece != null)
-                {
-                    randomPiece.GetComponent<GamePiece>().Init(this);
-                    PlaceGamePiece(randomPiece.GetComponent<GamePiece>(), i, j);
+                GamePiece piece = FillRandomAt(i, j);
 
-                    randomPiece.transform.parent = transform;
+                while (HasMatchOnFill(i, j))
+                {
+                    ClearPieceAt(i, j);
+                    piece = FillRandomAt(i, j);
+                    interactions++;
+                    
+                    if(interactions >= maxIterations) break;
                 }
             }
         }
+    }
+
+    private GamePiece FillRandomAt(int i, int j)
+    {
+        GameObject randomPiece = Instantiate(GetRandomGamePiece(), Vector3.zero, Quaternion.identity);
+        if (randomPiece != null)
+        {
+            randomPiece.GetComponent<GamePiece>().Init(this);
+            PlaceGamePiece(randomPiece.GetComponent<GamePiece>(), i, j);
+
+            randomPiece.transform.parent = transform;
+            
+            return randomPiece.GetComponent<GamePiece>();
+        }
+
+        return null;
+    }
+
+    private bool HasMatchOnFill(int x, int y, int minLenght = 3)
+    {
+        List<GamePiece> leftMatches = FindMatches(x, y, new Vector2(-1, 0), minLenght);
+        List<GamePiece> downwardMatches = FindMatches(x, y, new Vector2(0, -1), minLenght);
+
+        if (leftMatches == null)
+        {
+            leftMatches = new List<GamePiece>();
+        }
+        if(downwardMatches == null)
+        {
+            downwardMatches = new List<GamePiece>();
+        }
+        return (leftMatches.Count > 0 || downwardMatches.Count > 0);
     }
 
     private void SetUpCamera()
@@ -171,8 +206,12 @@ public class Board : MonoBehaviour
             else
             {
                 yield return new WaitForSeconds(swapTime);
-                HighlightMatchesAt(clickedTile.xIndex, clickedTile.yIndex);
-                HighlightMatchesAt(targetTile.xIndex, targetTile.yIndex);
+                ClearPieceAt(clickedPieceMatches);
+                ClearPieceAt(targetPieceMatches);
+                CollapseColumn(clickedPieceMatches);
+                CollapseColumn(targetPieceMatches);
+                //HighlightMatchesAt(clickedTile.xIndex, clickedTile.yIndex);
+                //HighlightMatchesAt(targetTile.xIndex, targetTile.yIndex);
             }
         }
     }
@@ -222,6 +261,7 @@ public class Board : MonoBehaviour
                 break;
             
             GamePiece nextPiece = m_allGamePiece[nextX, nextY];
+            if(nextPiece == null) break;
             if (nextPiece.matchValue == startPiece.matchValue)
             {
                 matches.Add(nextPiece);
@@ -239,7 +279,6 @@ public class Board : MonoBehaviour
         
         return null;
     }
-
     List<GamePiece> FindVerticalMatches(int startX, int startY, int minLenght = 3)
     {
         List<GamePiece> upwardMatches = FindMatches(startX, startY, new Vector2(0, 1), 2);
@@ -274,7 +313,6 @@ public class Board : MonoBehaviour
         var combinedMatches = rightwardMatches.Union(leftwardMatches).ToList();
         return combinedMatches.Count >= minLenght ? combinedMatches : null;
     }
-
     List<GamePiece> FindMatchesAt(int x, int y, int minLenght = 3)
     {
         List<GamePiece> horizMatches = FindHorizontalMatches(x, y, minLenght);
@@ -329,6 +367,91 @@ public class Board : MonoBehaviour
                 HighlightMatchesAt(i, j);
             }
         }
+    }
+    
+    void ClearPieceAt(int x, int y)
+    {
+        GamePiece pieceToClear = m_allGamePiece[x, y];
+        
+        if(pieceToClear != null)
+        {
+            m_allGamePiece[x, y] = null;
+            Destroy(pieceToClear.gameObject);
+        }
+        HighlightTileOff(x, y);
+    }
+
+    void ClearPieceAt(List<GamePiece> gamePieces)
+    {
+        foreach (var piece in gamePieces)
+        {
+            ClearPieceAt(piece.xIndex, piece.yIndex);
+        }
+    }
+
+    void ClearBoard()
+    {
+        for (int i = 0; i < width; i++)
+        {
+            for (int j = 0; j < height; j++)
+            {
+                ClearPieceAt(i, j);
+            }
+        }
+    }
+
+    List<GamePiece> CollapseColum(int column, float collapseTime = 0.1f)
+    {
+        List<GamePiece> movingPieces = new List<GamePiece>();
+
+        for (int i = 0; i < height - 1; i++)
+        {
+            if(m_allGamePiece[column, i] == null)
+            {
+                for (int j = i + 1; j < height; j++)
+                {
+                    if(m_allGamePiece[column, j] != null)
+                    {
+                        m_allGamePiece[column, j].Move(column, i, collapseTime);
+                        m_allGamePiece[column, i] = m_allGamePiece[column, j];
+                        m_allGamePiece[column, i].SetCoord(column, i);
+
+                        if(!movingPieces.Contains(m_allGamePiece[column, i]))
+                            movingPieces.Add(m_allGamePiece[column, i]);
+                        
+                        m_allGamePiece[column, j] = null;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return movingPieces;
+    }
+    
+    List<int> GetColumns(List<GamePiece> gamePieces)
+    {
+        List<int> columns = new List<int>();
+        foreach (var piece in gamePieces)
+        {
+            if(!columns.Contains(piece.xIndex))
+                columns.Add(piece.xIndex);
+        }
+
+        return columns;
+    }
+    
+    List<GamePiece> CollapseColumn(List<GamePiece> gamePieces)
+    {
+        List<GamePiece> movingPieces = new List<GamePiece>();
+        List<int> columnsToCollapse = GetColumns(gamePieces);
+
+        foreach (var column in columnsToCollapse)
+        {
+            movingPieces = movingPieces.Union(CollapseColum(column)).ToList();
+        }
+
+        return movingPieces;
     }
     
     [ContextMenu("Reset Board")]
