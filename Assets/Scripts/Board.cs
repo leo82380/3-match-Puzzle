@@ -45,7 +45,7 @@ public class Board : MonoBehaviour
         m_allGamePiece = new GamePiece[width, height];
         SetUpTiles();
         SetUpCamera();
-        FillRandom();
+        FillRandom(10, 0.5f);
     }
 
     GameObject GetRandomGamePiece()
@@ -76,7 +76,7 @@ public class Board : MonoBehaviour
         return (x >= 0 && x < width && y >= 0 && y < height);
     }
     
-    private void FillRandom()
+    private void FillRandom(int falseYOffset = 0, float moveTime = 0.1f)
     {
         int maxIterations = 100;
         int interactions = 0;
@@ -86,7 +86,7 @@ public class Board : MonoBehaviour
             {
                 if (m_allGamePiece[i, j] == null)
                 {
-                    GamePiece piece = FillRandomAt(i, j);
+                    GamePiece piece = FillRandomAt(i, j, falseYOffset, moveTime);
 
                     while (HasMatchOnFill(i, j))
                     {
@@ -100,13 +100,19 @@ public class Board : MonoBehaviour
             }
         }
     }
-    private GamePiece FillRandomAt(int i, int j)
+    private GamePiece FillRandomAt(int i, int j, int falseYOffset = 0, float moveTime = 0.1f)
     {
         GameObject randomPiece = Instantiate(GetRandomGamePiece(), Vector3.zero, Quaternion.identity);
         if (randomPiece != null)
         {
             randomPiece.GetComponent<GamePiece>().Init(this);
             PlaceGamePiece(randomPiece.GetComponent<GamePiece>(), i, j);
+
+            if (falseYOffset != 0)
+            {
+                randomPiece.transform.position = new Vector3(i, j + falseYOffset, 0);
+                randomPiece.GetComponent<GamePiece>().Move(i, j, moveTime);
+            }
 
             randomPiece.transform.parent = transform;
             
@@ -379,7 +385,8 @@ public class Board : MonoBehaviour
     {
         foreach (var piece in gamePieces)
         {
-            HighlightTileOn(piece.xIndex, piece.yIndex, piece.GetComponent<SpriteRenderer>().color);
+            if(piece != null)
+                HighlightTileOn(piece.xIndex, piece.yIndex, piece.GetComponent<SpriteRenderer>().color);
         }
     }
     void HighlightMatches()
@@ -496,7 +503,7 @@ public class Board : MonoBehaviour
 
     private IEnumerator RefillRoutine()
     {
-        FillRandom();
+        FillRandom(10, 0.5f);
         yield return null;
     }
 
