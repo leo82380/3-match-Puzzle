@@ -4,8 +4,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
+// 전부 주석 달아줘
+
+// Board 클래스는 MonoBehaviour를 상속받는다
+
 public class Board : MonoBehaviour
 {
+    // [Header("Board Setting")] : 인스펙터에서 보여질 이름
     #region 숫자
     [Header("Board Setting")]
     [Tooltip("가로")] [Range(1, 20)]
@@ -21,15 +26,19 @@ public class Board : MonoBehaviour
     #endregion
     [Space(10)]
     #region GameObject
+    // [Header("GameObject")] : 인스펙터에서 보여질 이름
     [Header("GameObject")]
     [Tooltip("타일\n위치: Assets/Prefabs/Tile.prefab")]
-    [SerializeField] private GameObject tilePrefab;
+    [SerializeField] private GameObject tileNormalPrefab;
+    [SerializeField] private GameObject tileObstaclePrefab;
     
     [Tooltip("게임 플레이 할 때 움직이는 오브젝트\n위치: Assets/Prefabs/Dots/ 전부")]
     [SerializeField] private GameObject[] gamePiecePrefabs;
     #endregion
     
     #region 배열
+    // [Header("Array")] : 인스펙터에서 보여질 이름
+    [Header("Array")]
     Tile[,] m_allTiles;
     GamePiece[,] m_allGamePiece;
     #endregion
@@ -38,6 +47,16 @@ public class Board : MonoBehaviour
     private Tile m_targetTile;
     
     bool m_playerInputEnabled = true;
+    
+    public StartingTiles[] startingTiles;
+    [Serializable]
+    public class StartingTiles
+    {
+        public GameObject tilePrefab;
+        public int x;
+        public int y;
+        public int z;
+    }
 
     void Start()
     {
@@ -45,7 +64,7 @@ public class Board : MonoBehaviour
         m_allGamePiece = new GamePiece[width, height];
         SetUpTiles();
         SetUpCamera();
-        FillRandom(10, 0.5f);
+        FillBoard(10, 0.5f);
     }
 
     GameObject GetRandomGamePiece()
@@ -76,7 +95,7 @@ public class Board : MonoBehaviour
         return (x >= 0 && x < width && y >= 0 && y < height);
     }
     
-    private void FillRandom(int falseYOffset = 0, float moveTime = 0.1f)
+    private void FillBoard(int falseYOffset = 0, float moveTime = 0.1f)
     {
         int maxIterations = 100;
         int interactions = 0;
@@ -84,7 +103,7 @@ public class Board : MonoBehaviour
         {
             for (int j = 0; j < height; j++)
             {
-                if (m_allGamePiece[i, j] == null)
+                if (m_allGamePiece[i, j] == null && m_allTiles[i, j].tileType != TileType.Obstacle)
                 {
                     GamePiece piece = FillRandomAt(i, j, falseYOffset, moveTime);
 
@@ -147,17 +166,33 @@ public class Board : MonoBehaviour
     }
     void SetUpTiles()
     {
+        foreach (var sTiles in startingTiles)
+        {
+            if (sTiles != null)
+            {
+                MakeTile(sTiles.tilePrefab, sTiles.x, sTiles.y, sTiles.z);
+            }
+        }
+        
         for (int i = 0; i < width; i++)
         {
             for (int j = 0; j < height; j++)
             {
-                GameObject tile = Instantiate(tilePrefab, new Vector3(i ,j , 0), Quaternion.identity, transform);
-                tile.name = "tile (" + i + "," + j + ")";
-                m_allTiles[i, j] = tile.GetComponent<Tile>();
-                m_allTiles[i, j].Init(i, j, this);
+                if(m_allTiles[i, j] == null)
+                    MakeTile(tileNormalPrefab, i, j);
             }
         }
     }
+
+    private void MakeTile(GameObject prefab, int i, int j, int k = 0)
+    {
+        if(prefab == null) return;
+        GameObject tile = Instantiate(prefab, new Vector3(i, j, k), Quaternion.identity, transform);
+        tile.name = "tile (" + i + "," + j + ")";
+        m_allTiles[i, j] = tile.GetComponent<Tile>();
+        m_allTiles[i, j].Init(i, j, this);
+    }
+
     public void ClickTile(Tile tile)
     {
         if (m_clickedTile == null)
@@ -193,7 +228,7 @@ public class Board : MonoBehaviour
             var clickedPiece = m_allGamePiece[clickedTile.xIndex, clickedTile.yIndex];
             var targetPiece = m_allGamePiece[targetTile.xIndex, targetTile.yIndex];
 
-            if (targetTile != null && clickedTile != null)
+            if (targetTile != null && clickedTile != null && targetPiece != null && clickedPiece != null)
             {
                 clickedPiece.Move(targetTile.xIndex, targetTile.yIndex, swapTime);
                 targetPiece.Move(clickedTile.xIndex, clickedTile.yIndex, swapTime);
@@ -263,13 +298,16 @@ public class Board : MonoBehaviour
             
             GamePiece nextPiece = m_allGamePiece[nextX, nextY];
             if(nextPiece == null) break;
-            if (nextPiece.matchValue == startPiece.matchValue)
-            {
-                matches.Add(nextPiece);
-            }
             else
             {
-                break;
+                if (nextPiece.matchValue == startPiece.matchValue)
+                {
+                    matches.Add(nextPiece);
+                }
+                else
+                {
+                    break;
+                }
             }
                 
         }
@@ -360,8 +398,12 @@ public class Board : MonoBehaviour
     
     void HighlightTileOff(int x, int y)
     {
-        SpriteRenderer spriteRenderer = m_allTiles[x, y].GetComponent<SpriteRenderer>();
-        spriteRenderer.color = new Color(spriteRenderer.color.r, spriteRenderer.color.g, spriteRenderer.color.b, 0f);
+        if (m_allTiles[x, y].tileType != TileType.Breakable)
+        {
+            SpriteRenderer spriteRenderer = m_allTiles[x, y].GetComponent<SpriteRenderer>();
+            spriteRenderer.color =
+                new Color(spriteRenderer.color.r, spriteRenderer.color.g, spriteRenderer.color.b, 0f);
+        }
     }
     void HighlightTileOn(int x, int y, Color color)
     {
@@ -435,7 +477,7 @@ public class Board : MonoBehaviour
 
         for (int i = 0; i < height - 1; i++)
         {
-            if(m_allGamePiece[column, i] == null)
+            if(m_allGamePiece[column, i] == null && m_allTiles[column, i].tileType != TileType.Obstacle)
             {
                 for (int j = i + 1; j < height; j++)
                 {
@@ -503,7 +545,7 @@ public class Board : MonoBehaviour
 
     private IEnumerator RefillRoutine()
     {
-        FillRandom(10, 0.5f);
+        FillBoard(10, 0.5f);
         yield return null;
     }
 
@@ -518,6 +560,7 @@ public class Board : MonoBehaviour
         while (!isFinished)
         {
             ClearPieceAt(gamePieces);
+            BreakTileAt(gamePieces);
             yield return new WaitForSeconds(0.25f);
             movingPieces = CollapseColumn(gamePieces);
             while (!IsCollapsed(movingPieces))
@@ -539,7 +582,22 @@ public class Board : MonoBehaviour
         }
         yield return null;
     }
-    
+
+    private void BreakTileAt(List<GamePiece> gamePieces)
+    {
+        foreach (var piece in gamePieces)
+        {
+            if(piece != null)
+            {
+                Tile tile = m_allTiles[piece.xIndex, piece.yIndex];
+                if(tile.tileType == TileType.Breakable)
+                {
+                    tile.BreakTile();
+                }
+            }
+        }
+    }
+
     bool IsCollapsed(List<GamePiece> gamePieces)
     {
         foreach (var piece in gamePieces)
