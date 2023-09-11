@@ -4,13 +4,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
-// 전부 주석 달아줘
-
-// Board 클래스는 MonoBehaviour를 상속받는다
-
 public class Board : MonoBehaviour
 {
-    // [Header("Board Setting")] : 인스펙터에서 보여질 이름
     #region 숫자
     [Header("Board Setting")]
     [Tooltip("가로")] [Range(1, 20)]
@@ -26,7 +21,6 @@ public class Board : MonoBehaviour
     #endregion
     [Space(10)]
     #region GameObject
-    // [Header("GameObject")] : 인스펙터에서 보여질 이름
     [Header("GameObject")]
     [Tooltip("타일\n위치: Assets/Prefabs/Tile.prefab")]
     [SerializeField] private GameObject tileNormalPrefab;
@@ -457,7 +451,7 @@ public class Board : MonoBehaviour
         foreach (var piece in gamePieces)
         {
             if(piece != null)
-            ClearPieceAt(piece.xIndex, piece.yIndex);
+                ClearPieceAt(piece.xIndex, piece.yIndex);
         }
     }
     void ClearBoard()
@@ -539,6 +533,7 @@ public class Board : MonoBehaviour
             //refill the board
             yield return StartCoroutine(RefillRoutine());
             matches = FindAllMatchesAt();
+            yield return new WaitForSeconds(0.5f);
         } while (matches.Count != 0);
         m_playerInputEnabled = true;
     }
@@ -583,17 +578,21 @@ public class Board : MonoBehaviour
         yield return null;
     }
 
+    void BreakTileAt(int x, int y)
+    {
+        Tile tileToBreak = m_allTiles[x, y];
+        
+        if(tileToBreak != null && tileToBreak.tileType == TileType.Breakable)
+            tileToBreak.BreakTile();
+    }
+
     private void BreakTileAt(List<GamePiece> gamePieces)
     {
         foreach (var piece in gamePieces)
         {
             if(piece != null)
             {
-                Tile tile = m_allTiles[piece.xIndex, piece.yIndex];
-                if(tile.tileType == TileType.Breakable)
-                {
-                    tile.BreakTile();
-                }
+                BreakTileAt(piece.xIndex, piece.yIndex);
             }
         }
     }
