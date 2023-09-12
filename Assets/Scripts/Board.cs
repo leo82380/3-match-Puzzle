@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
-using Unity.VisualScripting;
 
 public class Board : MonoBehaviour
 {
@@ -42,15 +41,19 @@ public class Board : MonoBehaviour
     private Tile m_targetTile;
     
     bool m_playerInputEnabled = true;
+    int falseYOffset = 10;
+    private float moveTime = 0.5f;
     
     [SerializeField] ParticleManager particleManager;
     
     
-    public StartingTiles[] startingTiles;
+    public StartingObject[] startingTiles;  
+    public StartingObject[] startingGamePieces;
+
     [Serializable]
-    public class StartingTiles
+    public class StartingObject
     {
-        public GameObject tilePrefab;
+        public GameObject prefab;
         public int x;
         public int y;
         public int z;
@@ -61,10 +64,11 @@ public class Board : MonoBehaviour
         m_allTiles = new Tile[width, height];
         m_allGamePiece = new GamePiece[width, height];
         SetUpTiles();
+        SetUpGamePieces();
         SetUpCamera();
-        FillBoard(10, 0.5f);
+        FillBoard(falseYOffset, moveTime);
     }
-
+    
     GameObject GetRandomGamePiece()
     {
         int randIndex = UnityEngine.Random.Range(0, gamePiecePrefabs.Length);
@@ -119,25 +123,51 @@ public class Board : MonoBehaviour
     }
     private GamePiece FillRandomAt(int i, int j, int falseYOffset = 0, float moveTime = 0.1f)
     {
+        if (!IsWithInBounds(i, j)) return null;
+        
         GameObject randomPiece = Instantiate(GetRandomGamePiece(), Vector3.zero, Quaternion.identity);
         if (randomPiece != null)
         {
-            randomPiece.GetComponent<GamePiece>().Init(this);
-            PlaceGamePiece(randomPiece.GetComponent<GamePiece>(), i, j);
+            MakeGamePiece(randomPiece, i, j, falseYOffset, moveTime);
+            return randomPiece.GetComponent<GamePiece>();
+        }
+        return null;
+    }
+
+    private void RePlaceWithRandom(List<GamePiece> gamePieces, int x, int y)
+    {
+        foreach (var piece in gamePieces)
+        {
+            ClearPieceAt(piece.xIndex, piece.yIndex);
+            if (falseYOffset == 0)
+            {
+                FillRandomAt(piece.xIndex, piece.yIndex);
+            }
+            else
+            {
+                FillRandomAt(piece.xIndex, piece.yIndex, falseYOffset, moveTime);
+            }
+        }
+    }
+
+    private void MakeGamePiece(GameObject piece, int i, int j, int falseYOffset = 0, float moveTime = 0.1f)
+    {
+        if(piece != null && IsWithInBounds(i, j))
+        {
+
+            piece.GetComponent<GamePiece>().Init(this);
+            PlaceGamePiece(piece.GetComponent<GamePiece>(), i, j);
 
             if (falseYOffset != 0)
             {
-                randomPiece.transform.position = new Vector3(i, j + falseYOffset, 0);
-                randomPiece.GetComponent<GamePiece>().Move(i, j, moveTime);
+                piece.transform.position = new Vector3(i, j + falseYOffset, 0);
+                piece.GetComponent<GamePiece>().Move(i, j, moveTime);
             }
 
-            randomPiece.transform.parent = transform;
-            
-            return randomPiece.GetComponent<GamePiece>();
+            piece.transform.parent = transform;
         }
-
-        return null;
     }
+
     private bool HasMatchOnFill(int x, int y, int minLenght = 3)
     {
         List<GamePiece> leftMatches = FindMatches(x, y, new Vector2(-1, 0), minLenght);
@@ -152,6 +182,17 @@ public class Board : MonoBehaviour
             downwardMatches = new List<GamePiece>();
         }
         return (leftMatches.Count > 0 || downwardMatches.Count > 0);
+    }
+    private void SetUpGamePieces()
+    {
+        foreach (var sPiece in startingGamePieces)
+        {
+            if (sPiece != null)
+            {
+                GameObject piece = Instantiate(sPiece.prefab, new Vector3(sPiece.x, sPiece.y, 0), Quaternion.identity);
+                MakeGamePiece(piece, sPiece.x, sPiece.y, falseYOffset, moveTime);
+            }
+        }
     }
     private void SetUpCamera()
     {
@@ -168,7 +209,7 @@ public class Board : MonoBehaviour
         {
             if (sTiles != null)
             {
-                MakeTile(sTiles.tilePrefab, sTiles.x, sTiles.y, sTiles.z);
+                MakeTile(sTiles.prefab, sTiles.x, sTiles.y);
             }
         }
         
@@ -562,6 +603,8 @@ public class Board : MonoBehaviour
         bool isFinished = false;
         while (!isFinished)
         {
+            List<GamePiece> bombedPieces = GetBombedPieces(gamePieces);
+            gamePieces = gamePieces.Union(bombedPieces).ToList();
             ClearPieceAt(gamePieces);
             BreakTileAt(gamePieces);
             yield return new WaitForSeconds(0.25f);
@@ -623,6 +666,84 @@ public class Board : MonoBehaviour
         }
 
         return true;
+    }
+    
+    List<GamePiece> GetRowPieces(int row)
+    {
+        List<GamePiece> gamePieces = new List<GamePiece>();
+
+        for (int i = 0; i < width; i++)
+        {
+            if(m_allGamePiece[i, row] != null)
+                gamePieces.Add(m_allGamePiece[i, row]);
+        }
+
+        return gamePieces;
+    }
+    
+    List<GamePiece> GetColumnPieces(int column)
+    {
+        List<GamePiece> gamePieces = new List<GamePiece>();
+
+        for (int i = 0; i < height; i++)
+        {
+            if(m_allGamePiece[column, i] != null)
+                gamePieces.Add(m_allGamePiece[column, i]);
+        }
+
+        return gamePieces;
+    }
+    
+    List<GamePiece> GetAdjacentPieces(int x, int y, int offset = 1)
+    {
+        List<GamePiece> gamePieces = new List<GamePiece>();
+
+        for (int i = x - offset; i <= x + offset; i++)
+        {
+            for (int j = y - offset; j <= y + offset; j++)
+            {
+                if(IsWithInBounds(i, j))
+                {
+                    gamePieces.Add(m_allGamePiece[i, j]);
+                }
+            }
+        }
+
+        return gamePieces;
+    }
+
+    List<GamePiece> GetBombedPieces(List<GamePiece> gamePieces)
+    {
+        List<GamePiece> allPiecesToClear = new List<GamePiece>();
+        foreach (var piece in gamePieces)
+        {
+            if (piece != null)
+            {
+                List<GamePiece> piecesToClear = new List<GamePiece>();
+                
+                Bomb bomb = piece.GetComponent<Bomb>();
+                if (bomb != null)
+                {
+                    switch (bomb.bombType)
+                    {
+                        case BombType.Column:
+                            piecesToClear = GetColumnPieces(bomb.xIndex);
+                            break;
+                        case BombType.Row:
+                            piecesToClear = GetRowPieces(bomb.yIndex);
+                            break;
+                        case BombType.Adjacent:
+                            piecesToClear = GetAdjacentPieces(bomb.xIndex, bomb.yIndex, 1);
+                            break;
+                        case BombType.Color:
+                            break;
+                    }
+                    allPiecesToClear = allPiecesToClear.Union(piecesToClear).ToList();
+                }
+            }
+        }
+
+        return allPiecesToClear;
     }
 
     [ContextMenu("Reset Board")]

@@ -104,7 +104,7 @@ MonoBehaviour:
   breakableValue: 1
   m_BreakableSprites:
   - {fileID: 21300000, guid: d932b27f13fc93148890aafaee16973c, type: 3}
-  - {fileID: 21300000, guid: ca947a22841f0e84e914c115558398d0, type: 3}
+  - {fileID: 21300000, guid: 585757b308d164ca4be60992762b4393, type: 3}
   - {fileID: 21300000, guid: 5cd66d2186f00f643910f3d4c79a6e2d, type: 3}
   nomalColor: {r: 0, g: 0, b: 0, a: 0}
 --- !u!61 &2486747854603203910
