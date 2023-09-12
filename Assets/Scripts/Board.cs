@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using Unity.VisualScripting;
 
 public class Board : MonoBehaviour
 {
@@ -41,6 +42,9 @@ public class Board : MonoBehaviour
     private Tile m_targetTile;
     
     bool m_playerInputEnabled = true;
+    
+    [SerializeField] ParticleManager particleManager;
+    
     
     public StartingTiles[] startingTiles;
     [Serializable]
@@ -450,8 +454,12 @@ public class Board : MonoBehaviour
     {
         foreach (var piece in gamePieces)
         {
-            if(piece != null)
+            if (piece != null)
+            {
                 ClearPieceAt(piece.xIndex, piece.yIndex);
+                if(particleManager != null)
+                    particleManager.ClearPieceFXAt(piece.xIndex, piece.yIndex, 0);
+            }
         }
     }
     void ClearBoard()
@@ -548,7 +556,7 @@ public class Board : MonoBehaviour
     {
         List<GamePiece> movingPieces = new List<GamePiece>();
         List<GamePiece> matches = new List<GamePiece>();
-        HighlightMatchesAt(gamePieces);
+        //HighlightMatchesAt(gamePieces);
 
         yield return new WaitForSeconds(0.25f);
         bool isFinished = false;
@@ -581,9 +589,13 @@ public class Board : MonoBehaviour
     void BreakTileAt(int x, int y)
     {
         Tile tileToBreak = m_allTiles[x, y];
-        
-        if(tileToBreak != null && tileToBreak.tileType == TileType.Breakable)
+
+        if (tileToBreak != null && tileToBreak.tileType == TileType.Breakable)
+        {
             tileToBreak.BreakTile();
+            if(particleManager != null)
+                particleManager.BreakTileFXAt(tileToBreak.breakableValue, tileToBreak.xIndex, tileToBreak.yIndex, 0);
+        }
     }
 
     private void BreakTileAt(List<GamePiece> gamePieces)

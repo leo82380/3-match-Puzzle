@@ -27,6 +27,7 @@ public class Tile : MonoBehaviour
     [SerializeField] Sprite[] m_BreakableSprites;
     public Color nomalColor;
     
+    
     void Awake()
     {
         m_SpriteRenderer = GetComponent<SpriteRenderer>();

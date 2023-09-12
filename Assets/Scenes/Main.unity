@@ -380,6 +380,7 @@ MonoBehaviour:
   - {fileID: 9028216262350483322, guid: e442a32e287e6a041b39c0a59c558665, type: 3}
   - {fileID: 3371626819580993466, guid: fe011788959f7774aa3e07218254f4d4, type: 3}
   - {fileID: 7742614862907796558, guid: e73605a946aad9d4fbe570c082738a68, type: 3}
+  particleManager: {fileID: 1009938145}
   startingTiles:
   - tilePrefab: {fileID: 2376103654715245473, guid: ab67e16b05f1f9c41b4c48576f1e8689, type: 3}
     x: 2
