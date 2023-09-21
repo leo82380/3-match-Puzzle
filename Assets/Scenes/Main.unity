@@ -322,6 +322,7 @@ MonoBehaviour:
   clearFXPrefab: {fileID: 3940975357833676795, guid: de9f0083a93e42441a3bd3d8d2189e79, type: 3}
   breakFXPrefab: {fileID: 3243664107987781472, guid: 4d120744aca34214caea609027ed413d, type: 3}
   doubleBreakFXPrefab: {fileID: 2140769824885441938, guid: 1898e1fac4ed52147b736976eec19292, type: 3}
+  clearBombFXPrefab: {fileID: 2667936246680462419, guid: a2897024ae434284fb71c23e89282c97, type: 3}
 --- !u!4 &1009938146
 Transform:
   m_ObjectHideFlags: 0
@@ -383,27 +384,28 @@ MonoBehaviour:
   adjacentBombPrefab: {fileID: 6262658309238233734, guid: 4a06947241cfc7f44b9568552fb5f7fb, type: 3}
   columnBombPrefab: {fileID: 2082361833765001835, guid: 0211e500bca156444a27e5cb042f7f4e, type: 3}
   rowBombPrefab: {fileID: 2132580236290243866, guid: bf5033a5b55ba4e429767d9ad7661244, type: 3}
+  colorBombPrefab: {fileID: 8848889036147821692, guid: 69bb5fd1e66fdd345a1b29516b1b8d9d, type: 3}
   particleManager: {fileID: 1009938145}
-  startingTiles:
-  - prefab: {fileID: 2376103654715245473, guid: ab67e16b05f1f9c41b4c48576f1e8689, type: 3}
-    x: 2
-    y: 3
-    z: 0
-  - prefab: {fileID: 7859900929787445748, guid: 7b5bc44ea6f69f44595279ff3019da37, type: 3}
-    x: 3
-    y: 3
-    z: 1
+  startingTiles: []
   startingGamePieces:
-  - prefab: {fileID: 6262658309238233734, guid: 4a06947241cfc7f44b9568552fb5f7fb, type: 3}
-    x: 2
+  - prefab: {fileID: 2504121773109240750, guid: 99395d0a8d5211e46952b011d42d3b07, type: 3}
+    x: 0
     y: 0
     z: 0
-  - prefab: {fileID: 2082361833765001835, guid: 0211e500bca156444a27e5cb042f7f4e, type: 3}
-    x: 3
-    y: 2
+  - prefab: {fileID: 2504121773109240750, guid: 99395d0a8d5211e46952b011d42d3b07, type: 3}
+    x: 1
+    y: 0
     z: 0
-  - prefab: {fileID: 2132580236290243866, guid: bf5033a5b55ba4e429767d9ad7661244, type: 3}
+  - prefab: {fileID: 2504121773109240750, guid: 99395d0a8d5211e46952b011d42d3b07, type: 3}
+    x: 3
+    y: 0
+    z: 0
+  - prefab: {fileID: 2504121773109240750, guid: 99395d0a8d5211e46952b011d42d3b07, type: 3}
     x: 4
+    y: 0
+    z: 0
+  - prefab: {fileID: 2504121773109240750, guid: 99395d0a8d5211e46952b011d42d3b07, type: 3}
+    x: 2
     y: 1
     z: 0
 --- !u!4 &1149430126
