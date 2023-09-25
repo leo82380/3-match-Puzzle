@@ -28,14 +28,22 @@ public class Board : MonoBehaviour
     
     [Tooltip("게임 플레이 할 때 움직이는 오브젝트\n위치: Assets/Prefabs/Dots/ 전부")]
     [SerializeField] private GameObject[] gamePiecePrefabs;
+    [Space]
     
+    [Header("Bomb")]
     [SerializeField] private GameObject adjacentBombPrefab;
     [SerializeField] private GameObject columnBombPrefab;
     [SerializeField] private GameObject rowBombPrefab;
     [SerializeField] private GameObject colorBombPrefab;
+    [Header("Collectable")]
+    public int maxCollectibles = 3;
+    public int collectableCount = 0;
+    [Range(0f, 1f)]
+    public float chanceForCollectable = 0.1f;
     
     GameObject m_clickedTileBomb;
     GameObject m_targetTileBomb;
+    [Space]
     #endregion
     
     #region 배열
@@ -44,7 +52,7 @@ public class Board : MonoBehaviour
     Tile[,] m_allTiles;
     GamePiece[,] m_allGamePiece;
     #endregion
-
+    
     private Tile m_clickedTile;
     private Tile m_targetTile;
     
@@ -402,7 +410,7 @@ public class Board : MonoBehaviour
             if(nextPiece == null) break;
             else
             {
-                if (nextPiece.matchValue == startPiece.matchValue)
+                if (nextPiece.matchValue == startPiece.matchValue && nextPiece.matchValue != MatchValue.None && !matches.Contains(nextPiece))
                 {
                     matches.Add(nextPiece);
                 }
